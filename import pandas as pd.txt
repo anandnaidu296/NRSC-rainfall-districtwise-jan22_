@@ -1,0 +1,92 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+# Load the dataset with proper encoding
+file_path = "C:\\Users\\anand\\Downloads\\NRSC-rainfall-districtwise-jan22_0.csv"
+try:
+    df = pd.read_csv(file_path, encoding='utf-8')
+except UnicodeDecodeError:
+    df = pd.read_csv(file_path, encoding='latin1')
+
+# 1. Get info
+print("\nDataset Info:\n")
+print(df.info())
+
+# 2. Convert Date to datetime
+df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+
+# 3. Handle missing data
+print("\nMissing values before:\n", df.isnull().sum())
+df.dropna(inplace=True)
+print("\nMissing values after:\n", df.isnull().sum())
+
+# 4. Basic EDA - Describe
+print("\nStatistical Description:\n", df.describe())
+
+# 5. Relationships between variables
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='Month', y='Avg_rainfall', data=df)
+plt.title("Rainfall vs Month")
+plt.xlabel("Month")
+plt.ylabel("Average Rainfall")
+plt.tight_layout()
+plt.show()
+
+# 6. Heatmap - correlation
+plt.figure(figsize=(8, 6))
+sns.heatmap(df[['Year', 'Month', 'Avg_rainfall']].corr(), annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap")
+plt.tight_layout()
+plt.show()
+
+# 7. Outliers - Boxplot and Z-score
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='Month', y='Avg_rainfall', data=df)
+plt.title("Boxplot of Rainfall by Month")
+plt.tight_layout()
+plt.show()
+
+# Outliers using Z-score
+z_scores = np.abs(stats.zscore(df[['Avg_rainfall']]))
+df_outliers = df[z_scores > 3]
+print(f"\nOutliers based on Z-score (threshold=3): {df_outliers.shape[0]} rows")
+
+# Pairplot (with hue as State to avoid palette error)
+sns.pairplot(df[['Year', 'Month', 'Avg_rainfall']], diag_kind="kde")
+plt.suptitle("Pairplot of Rainfall Data", y=1.02)
+plt.tight_layout()
+plt.show()
+
+# Line Graph (Monthly average rainfall)
+monthly_avg = df.groupby('Month')['Avg_rainfall'].mean().reset_index()
+plt.figure(figsize=(10, 5))
+sns.lineplot(x='Month', y='Avg_rainfall', data=monthly_avg, marker='o')
+plt.title("Average Rainfall per Month")
+plt.xlabel("Month")
+plt.ylabel("Avg Rainfall")
+plt.tight_layout()
+plt.show()
+
+# Bar Graph (Top 10 districts by total rainfall)
+top_districts = df.groupby('District')['Avg_rainfall'].sum().nlargest(10).reset_index()
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Avg_rainfall', y='District', data=top_districts, palette='viridis')
+plt.title("Top 10 Districts by Total Rainfall")
+plt.xlabel("Total Rainfall")
+plt.ylabel("District")
+plt.tight_layout()
+plt.show()
+
+# Column Graph (Monthly Rainfall for a specific district)
+district = 'Nicobar'
+district_monthly = df[df['District'] == district].groupby('Month')['Avg_rainfall'].mean().reset_index()
+plt.figure(figsize=(10, 5))
+sns.barplot(x='Month', y='Avg_rainfall', data=district_monthly, color='skyblue')
+plt.title(f"Monthly Avg Rainfall in {district}")
+plt.xlabel("Month")
+plt.ylabel("Avg Rainfall")
+plt.tight_layout()
+plt.show()
